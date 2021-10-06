@@ -1,1 +1,1 @@
-# PureJavaScriptPro
+# PureJavaScript
