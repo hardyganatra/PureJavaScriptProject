@@ -9,8 +9,7 @@ const cartContent = document.querySelector('.cart-content');
 const productsDom = document.querySelector('.products-center');
 const cartClosebtn = document.querySelector('.fa-window-close');
 
-let cart = localStorage.getItem('cart');
-cart = JSON.parse(cart) || [];
+let cart = [];
 
 let buttonsDom = [];
 
@@ -125,6 +124,63 @@ class UI {
     cartBtn.addEventListener('click', this.showCart);
     closeCartBtn.addEventListener('click', this.hideCart);
   };
+  cartLogic = () => {
+    // clear cart button
+    clearCartBtn.addEventListener('click', this.clearCart);
+    // cart functionality
+    cartContent.addEventListener('click', (event) => {
+      if (event.target.className === 'remove-item') {
+        let removeItem = event.target;
+        let id = removeItem.dataset.id;
+        cartContent.removeChild(removeItem.parentElement.parentElement);
+        this.removeItemFromCart(id);
+        cartContent.children.length === 0 && this.hideCart();
+      } else if (event.target.classList.contains('fa-chevron-up')) {
+        // update cart total
+        let addAmount = event.target;
+        let id = addAmount.dataset.id;
+        let tempItem = cart.find((item) => item.id === id);
+        tempItem.amount = tempItem.amount + 1;
+        Storage.saveCart(cart);
+        this.setCartValues(cart);
+        addAmount.nextElementSibling.innerText = tempItem.amount;
+      } else if (event.target.classList.contains('fa-chevron-down')) {
+        // update cart total
+        let lowerAmount = event.target;
+        let id = lowerAmount.dataset.id;
+        let tempItem = cart.find((item) => item.id === id);
+        tempItem.amount = tempItem.amount - 1;
+        if (tempItem.amount > 0) {
+          Storage.saveCart(cart);
+          this.setCartValues(cart);
+          lowerAmount.previousElementSibling.innerText = tempItem.amount;
+        } else {
+          cartContent.removeChild(lowerAmount.parentElement.parentElement);
+          this.removeItemFromCart(id);
+          cartContent.children.length === 0 && this.hideCart();
+        }
+      }
+    });
+  };
+  clearCart = () => {
+    let cartItems = cart.map((cartItem) => cartItem.id);
+    cartItems.forEach((id) => this.removeItemFromCart(id));
+    while (cartContent.children.length > 0) {
+      cartContent.removeChild(cartContent.children[0]);
+    }
+    this.hideCart();
+  };
+  removeItemFromCart = (id) => {
+    cart = cart.filter((item) => item.id !== id);
+    this.setCartValues(cart);
+    Storage.saveCart(cart);
+    let button = this.getSingleButton(id);
+    button.innerHTML = `<i class="fas fa-shopping-cart"></i>add to cart`;
+    button.disabled = false;
+  };
+  getSingleButton = (id) => {
+    return buttonsDom.find((bagButtons) => bagButtons.dataset.id === id);
+  };
 }
 
 // Local Storage
@@ -159,7 +215,10 @@ document.addEventListener('DOMContentLoaded', () => {
       ui.displayProducts(products);
       Storage.saveProduct(products);
     })
-    .then(() => ui.getBagButtons());
+    .then(() => {
+      ui.getBagButtons();
+      ui.cartLogic();
+    });
 
   console.log('DOM LOADED');
 });
